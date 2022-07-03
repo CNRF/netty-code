@@ -1284,6 +1284,7 @@
               <consoleOutput>true</consoleOutput>
               <logViolationsToConsole>true</logViolationsToConsole>
               <failsOnError>true</failsOnError>
+              <skip>true</skip>
               <failOnViolation>true</failOnViolation>
               <configLocation>io/netty/checkstyle.xml</configLocation>
               <sourceDirectories>
