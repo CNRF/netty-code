@@ -129,7 +129,9 @@ public class ServerBootstrap extends AbstractBootstrap<ServerBootstrap, ServerCh
 
     @Override
     void init(Channel channel) {
+        //设置Channel参数，我们在引导代码中通过.option(ChannelOption.SO_BACKLOG true)所设置的参数
         setChannelOptions(channel, newOptionsArray(), logger);
+        //设置channel的相关属性
         setAttributes(channel, newAttributesArray());
 
         ChannelPipeline p = channel.pipeline();
@@ -138,6 +140,10 @@ public class ServerBootstrap extends AbstractBootstrap<ServerBootstrap, ServerCh
         final ChannelHandler currentChildHandler = childHandler;
         final Entry<ChannelOption<?>, Object>[] currentChildOptions = newOptionsArray(childOptions);
         final Entry<AttributeKey<?>, Object>[] currentChildAttrs = newAttributesArray(childAttrs);
+        //p.addLast是同步调用，不管是不是EventLoop线程在执行，这个匿名的ChannelInitializer被立即添加进PipeLine中
+        //但是这个匿名的ChannelInitializer的initChannel方法是被channelAdded方法调用的，而channelAdded方法只能被EventLoop线程调用
+        //此时这个Channel还没绑定EventLoop线程，所以这个匿名的ChannelInitializer的channelAdded方法的调用会被封装成异步任务添加到PipeLine的pendingHandlerCallback链表中
+        //当Channel绑定EventLoop以后会从pendingHandlerCallback链表中取出任务执行。
 
         p.addLast(new ChannelInitializer<Channel>() {
             @Override
@@ -145,9 +151,10 @@ public class ServerBootstrap extends AbstractBootstrap<ServerBootstrap, ServerCh
                 final ChannelPipeline pipeline = ch.pipeline();
                 ChannelHandler handler = config.handler();
                 if (handler != null) {
+                    //添加配置的handler
                     pipeline.addLast(handler);
                 }
-
+                //添加ServerBootstrapAcceptor
                 ch.eventLoop().execute(new Runnable() {
                     @Override
                     public void run() {
